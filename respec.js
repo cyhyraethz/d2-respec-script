@@ -14,21 +14,17 @@ const lastSkillOffset = 648;
 let unspentStats;
 let unspentSkills;
 
-const getValue = (buffer, offset) => {
-  return buffer[offset].toString(16).toUpperCase();
-};
-
 const getUnspent = (buffer) => {
-  switch (getValue(buffer, unspentOffset)) {
-    case 'DF':
-      unspentStats = parseInt(getValue(buffer, newStatsOffset), 16);
+  switch (buffer[unspentOffset]) {
+    case 223:
+      unspentStats = buffer[newStatsOffset];
       break;
-    case 'EF':
-      unspentSkills = parseInt(getValue(buffer, newSkillOffset - 4), 16);
+    case 239:
+      unspentSkills = buffer[newSkillOffset - 4];
       break;
-    case 'FF':
-      unspentStats = parseInt(getValue(buffer, newStatsOffset), 16);
-      unspentSkills = parseInt(getValue(buffer, newSkillOffset), 16);
+    case 255:
+      unspentStats = buffer[newStatsOffset];
+      unspentSkills = buffer[newSkillOffset];
       break;
   }
 };
@@ -50,7 +46,7 @@ const addToBuffer = (buffer) => {
 const resetSkills = (buffer) => {
   let unassignedSkills = 0;
   for (let i = firstSkillOffset; i <= lastSkillOffset; i++) {
-    unassignedSkills += parseInt(getValue(buffer, i), 16);
+    unassignedSkills += buffer[i];
     buffer[i] = parseInt('0', 16);
   }
   buffer[newSkillOffset] = unspentSkills + unassignedSkills;
