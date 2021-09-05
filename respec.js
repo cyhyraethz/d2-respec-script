@@ -112,8 +112,25 @@ const resetAttributes = (buffer) => {
     buffer.fill(0, attributeOffsets[i], attributeOffsets[i] + 4);
     buffer[attributeOffsets[i]] = startingAttributes[charClass][i];
   }
-  buffer[newStatsOffset] =
-    unspentAttributes + unassigned.reduce((a, b) => a + b);
+  let totalUnassigned = (unspentAttributes + unassigned.reduce((a, b) => a + b))
+    .toString(16)
+    .toUpperCase()
+    .split('');
+  let hexCodes = [];
+  for (let i = totalUnassigned.length - 1; i >= 0; i -= 2) {
+    if (totalUnassigned[i - 1]) {
+      hexCodes.push(totalUnassigned[i - 1] + totalUnassigned[i]);
+    } else {
+      hexCodes.push('0' + totalUnassigned[i]);
+    }
+  }
+  while (hexCodes.length < 4) {
+    hexCodes.push('00');
+  }
+  for (let i = 0; i < +4; i++) {
+    buffer[newStatsOffset + i] = parseInt(hexCodes[i], 16);
+  }
+  console.log({ hexCodes, attributes, unassigned });
   return buffer;
 };
 
