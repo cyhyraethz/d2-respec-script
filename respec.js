@@ -42,7 +42,7 @@ const statsChanges = {
   barbarian: [1, 4, 1],
 };
 
-let maxStats = [0, 0, 0];
+const maxStats = [0, 0, 0];
 
 let charClass;
 let unspentSkills;
@@ -57,7 +57,7 @@ const getValue = (offset, size, buffer) => {
 };
 
 const setValue = (value, offset, size, buffer) => {
-  let hexCodes = [];
+  const hexCodes = [];
   value = value.toString(16).toUpperCase().split('');
   for (let i = value.length - 1; i >= 0; i -= 2) {
     if (value[i - 1]) {
@@ -72,7 +72,6 @@ const setValue = (value, offset, size, buffer) => {
   for (let i = 0; i < size; i++) {
     buffer[offset + i] = parseInt(hexCodes[i], 16);
   }
-  console.log({ hexCodes });
   return buffer;
 };
 
@@ -84,11 +83,11 @@ const getStats = (buffer) => {
 };
 
 const setStats = (unassigned, buffer) => {
-  let stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
-  let life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
-  let mana =
+  const stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
+  const life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
+  const mana =
     maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
-  let stats = [stamina, life, mana];
+  const stats = [stamina, life, mana];
   for (let i = 0; i < stats.length; i++) {
     buffer = setValue(stats[i], maxStatsOffsets[i], bufferSize, buffer);
     buffer = setValue(stats[i], currentStatsOffsets[i], bufferSize, buffer);
@@ -162,8 +161,8 @@ const resetSkills = (buffer) => {
 };
 
 const resetAttributes = (buffer) => {
-  let unassigned = [0, 0, 0, 0];
-  let attributes = ['', '', '', ''];
+  const unassigned = [0, 0, 0, 0];
+  const attributes = ['', '', '', ''];
   for (let i = 0; i < attributeOffsets.length; i++) {
     for (let j = attributeOffsets[i] + 3; j >= attributeOffsets[i]; j--) {
       attributes[i] += buffer[j].toString(16).toUpperCase().padStart(2, '0');
@@ -173,7 +172,7 @@ const resetAttributes = (buffer) => {
     buffer.fill(0, attributeOffsets[i], attributeOffsets[i] + 4);
     buffer[attributeOffsets[i]] = startingAttributes[charClass][i];
   }
-  let totalUnassigned =
+  const totalUnassigned =
     (unspentAttributes || 0) + unassigned.reduce((a, b) => a + b);
   buffer = setValue(totalUnassigned, newStatsOffset, bufferSize, buffer);
   buffer = setStats(unassigned, buffer);
