@@ -5,19 +5,25 @@ const fs = require('fs');
 
 const args = process.argv;
 
-const classOffset = 34;
+const bufferSize = 2; // number of bytes to use for values, can handle numbers up to 65535
 
-const unspentOffset = 562;
+const classOffset = 34; // 00 amazon, 01 sorceress, 02 necromancer, 03 paladin, 04 barbarian
 
-const newStatsOffset = 581;
-const newSkillOffset = 585;
+const unspentOffset = 562; // set to 255 to enable unspent skill points and attributes
 
-const firstSkillOffset = 619;
-const lastSkillOffset = 648;
+const newStatsOffset = 581; // number of unspent attribute points
+const newSkillOffset = 585; // number of unspent skill points
 
-const attributeOffsets = [565, 573, 577, 569];
+const firstSkillOffset = 619; // address of first class skill
+const lastSkillOffset = 648; // address of last class skill
+
+const maxStatsOffsets = [610, 594, 602]; // stamina, life, mana
+const currentStatsOffsets = [606, 590, 598]; // stamina, life, mana
+
+const attributeOffsets = [565, 573, 577, 569]; // strength, dexterity, vitality, energy
 
 const startingAttributes = {
+  // strength, dexterity, vitality, energy
   amazon: [20, 25, 20, 15],
   sorceress: [10, 25, 10, 35],
   necromancer: [15, 25, 15, 25],
@@ -25,12 +31,12 @@ const startingAttributes = {
   barbarian: [30, 20, 25, 10],
 };
 
-const statChanges = {
+const statsChanges = {
   // stamina, life, mana
-  amazon: [1, 3, 1.5], // even points +1 mana, odd points +2 mana
+  amazon: [1, 3, 1.5], // first point +1 mana, second point +2 mana, Math.floor()
   sorceress: [1, 2, 2],
   necromancer: [1, 2, 2],
-  paladin: [1, 3, 1.5], // even points +1 mana, odd points +2 mana
+  paladin: [1, 3, 1.5], // first point +1 mana, second point +2 mana, Math.floor()
   barbarian: [1, 4, 1],
 };
 
