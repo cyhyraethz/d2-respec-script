@@ -22,6 +22,8 @@ const currentStatsOffsets = [606, 590, 598]; // stamina, life, mana
 
 const attributeOffsets = [565, 573, 577, 569]; // strength, dexterity, vitality, energy
 
+const halfPointOffsets = [597, 601]; // used to calculate mana gain from next energy point
+
 const startingAttributes = {
   // strength, dexterity, vitality, energy
   amazon: [20, 25, 20, 15],
@@ -77,6 +79,22 @@ const setValue = (value, offset, size, buffer) => {
 const getStats = (buffer) => {
   for (let i = 0; i < maxStats.length; i++) {
     maxStats[i] = getValue(maxStatsOffsets[i], bufferSize, buffer);
+  }
+  return buffer;
+};
+
+const setStats = (unassigned, buffer) => {
+  let stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
+  let life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
+  let mana =
+    maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
+  let stats = [stamina, life, mana];
+  for (let i = 0; i < stats.length; i++) {
+    buffer = setValue(stats[i], maxStatsOffsets[i], bufferSize, buffer);
+    buffer = setValue(stats[i], currentStatsOffsets[i], bufferSize, buffer);
+  }
+  for (let i = 0; i < halfPointOffsets.length; i++) {
+    buffer[halfPointOffsets[i]] = 0;
   }
   return buffer;
 };
@@ -158,17 +176,7 @@ const resetAttributes = (buffer) => {
   let totalUnassigned =
     (unspentAttributes || 0) + unassigned.reduce((a, b) => a + b);
   buffer = setValue(totalUnassigned, newStatsOffset, bufferSize, buffer);
-  let stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
-  let life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
-  let mana =
-    maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
-  let stats = [stamina, life, mana];
-  for (let i = 0; i < stats.length; i++) {
-    buffer = setValue(stats[i], maxStatsOffsets[i], bufferSize, buffer);
-    buffer = setValue(stats[i], currentStatsOffsets[i], bufferSize, buffer);
-  }
-  buffer[597] = 0;
-  buffer[601] = 0;
+  buffer = setStats(unassigned, buffer);
   return buffer;
 };
 
