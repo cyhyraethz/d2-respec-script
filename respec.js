@@ -119,12 +119,12 @@ const getUnspent = (buffer) => {
 };
 
 const addToBuffer = (buffer) => {
-  if (unspentAttributes === undefined) {
+  if (buffer[unspentOffset] !== 223 && buffer[unspentOffset] !== 255) {
     const startBuffer = buffer.slice(0, newStatsOffset);
     const endBuffer = buffer.slice(newStatsOffset);
     buffer = Buffer.concat([startBuffer, Buffer.alloc(4), endBuffer]);
   }
-  if (unspentSkills === undefined) {
+  if (buffer[unspentOffset] !== 239 && buffer[unspentOffset] !== 255) {
     const startBuffer = buffer.slice(0, newSkillOffset);
     const endBuffer = buffer.slice(newSkillOffset);
     buffer = Buffer.concat([startBuffer, Buffer.alloc(4), endBuffer]);
@@ -166,10 +166,10 @@ fs.readFile(args[2], (error, buffer) => {
     if (error) {
       return console.log(error);
     } else {
-      buffer = getStats(buffer);
-      buffer = getClass(buffer);
-      buffer = getUnspent(buffer);
       buffer = addToBuffer(buffer);
+      buffer = getUnspent(buffer);
+      buffer = getClass(buffer);
+      buffer = getStats(buffer);
       buffer = resetSkills(buffer);
       buffer = resetAttributes(buffer);
       fs.writeFile(args[2], buffer, (error) => {
