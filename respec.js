@@ -46,6 +46,34 @@ let charClass;
 let unspentSkills;
 let unspentAttributes;
 
+const getValue = (offset, size, buffer) => {
+  let value = '';
+  for (let i = offset + size - 1; i >= offset; i--) {
+    value += buffer[i].toString(16).toUpperCase();
+  }
+  return parseInt(value, 16);
+};
+
+const setValue = (value, offset, size, buffer) => {
+  let hexCodes = [];
+  value = value.toString(16).toUpperCase().split('');
+  for (let i = value.length - 1; i >= 0; i -= 2) {
+    if (value[i - 1]) {
+      hexCodes.push(value[i - 1] + value[i]);
+    } else {
+      hexCodes.push('0' + value[i]);
+    }
+  }
+  while (hexCodes.length < size) {
+    hexCodes.push('00');
+  }
+  for (let i = 0; i < size; i++) {
+    buffer[offset + i] = parseInt(hexCodes[i], 16);
+  }
+  console.log({ hexCodes });
+  return buffer;
+};
+
 const getStats = (buffer) => {
   for (let i = 0; i < maxStats.length; i++) {
     maxStats[i] = getValue(maxStatsOffsets[i], bufferSize, buffer);
@@ -77,14 +105,14 @@ const getClass = (buffer) => {
 const getUnspent = (buffer) => {
   switch (buffer[unspentOffset]) {
     case 223:
-      unspentAttributes = buffer[newStatsOffset];
+      unspentAttributes = getValue(newStatsOffset, bufferSize, buffer);
       break;
     case 239:
-      unspentSkills = buffer[newSkillOffset - 4];
+      unspentSkills = getValue(newSkillOffset, bufferSize, buffer);
       break;
     case 255:
-      unspentAttributes = buffer[newStatsOffset];
-      unspentSkills = buffer[newSkillOffset];
+      unspentAttributes = getValue(newStatsOffset, bufferSize, buffer);
+      unspentSkills = getValue(newSkillOffset, bufferSize, buffer);
       break;
   }
   return buffer;
@@ -127,25 +155,9 @@ const resetAttributes = (buffer) => {
     buffer.fill(0, attributeOffsets[i], attributeOffsets[i] + 4);
     buffer[attributeOffsets[i]] = startingAttributes[charClass][i];
   }
-  let totalUnassigned = (unspentAttributes + unassigned.reduce((a, b) => a + b))
-    .toString(16)
-    .toUpperCase()
-    .split('');
-  let hexCodes = [];
-  for (let i = totalUnassigned.length - 1; i >= 0; i -= 2) {
-    if (totalUnassigned[i - 1]) {
-      hexCodes.push(totalUnassigned[i - 1] + totalUnassigned[i]);
-    } else {
-      hexCodes.push('0' + totalUnassigned[i]);
-    }
-  }
-  while (hexCodes.length < 4) {
-    hexCodes.push('00');
-  }
-  for (let i = 0; i < +4; i++) {
-    buffer[newStatsOffset + i] = parseInt(hexCodes[i], 16);
-  }
-  console.log({ hexCodes, attributes, unassigned });
+  let totalUnassigned =
+    (unspentAttributes || 0) + unassigned.reduce((a, b) => a + b);
+  buffer = setValue(totalUnassigned, newStatsOffset, bufferSize, buffer);
   return buffer;
 };
 
