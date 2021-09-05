@@ -40,9 +40,18 @@ const statsChanges = {
   barbarian: [1, 4, 1],
 };
 
+let maxStats = [0, 0, 0];
+
 let charClass;
 let unspentSkills;
 let unspentAttributes;
+
+const getStats = (buffer) => {
+  for (let i = 0; i < maxStats.length; i++) {
+    maxStats[i] = getValue(maxStatsOffsets[i], bufferSize, buffer);
+  }
+  return buffer;
+};
 
 const getClass = (buffer) => {
   switch (buffer[classOffset]) {
@@ -145,6 +154,7 @@ fs.readFile(args[2], (error, buffer) => {
     if (error) {
       return console.log(error);
     } else {
+      buffer = getStats(buffer);
       buffer = getClass(buffer);
       buffer = getUnspent(buffer);
       buffer = addToBuffer(buffer);
