@@ -72,6 +72,7 @@ const setValue = (value, offset, size, buffer) => {
   for (let i = 0; i < size; i++) {
     buffer[offset + i] = parseInt(hexCodes[i], 16);
   }
+  // console.log({ hexCodes });
   return buffer;
 };
 
@@ -136,6 +137,7 @@ const getUnspent = (buffer) => {
 };
 
 const addToBuffer = (buffer) => {
+  // console.log(buffer.length);
   if (buffer[unspentOffset] !== 223 && buffer[unspentOffset] !== 255) {
     const startBuffer = buffer.slice(0, newStatsOffset);
     const endBuffer = buffer.slice(newStatsOffset);
@@ -147,6 +149,7 @@ const addToBuffer = (buffer) => {
     buffer = Buffer.concat([startBuffer, Buffer.alloc(4), endBuffer]);
   }
   buffer[unspentOffset] = 255;
+  // console.log(buffer.length);
   return buffer;
 };
 
@@ -176,6 +179,8 @@ const resetAttributes = (buffer) => {
     (unspentAttributes || 0) + unassigned.reduce((a, b) => a + b);
   buffer = setValue(totalUnassigned, newStatsOffset, bufferSize, buffer);
   buffer = setStats(unassigned, buffer);
+  // console.log({ unassigned });
+  // console.log({ attributes });
   return buffer;
 };
 
@@ -194,6 +199,7 @@ fs.readFile(args[2], (error, buffer) => {
         if (error) {
           console.log(error);
         } else {
+          // console.log({ maxStats });
           console.log('Skill points and attributes have been unassigned.');
         }
       });
