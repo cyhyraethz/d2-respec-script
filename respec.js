@@ -185,7 +185,7 @@ const resetAttributes = (buffer) => {
 };
 
 fs.readFile(args[2], (error, buffer) => {
-  if (buffer[4] == 71) {
+  if (buffer[4] == 71 || buffer[4] == 87 || buffer[4] == 89) {
     if (error) {
       return console.log(error);
     } else {
@@ -206,7 +206,7 @@ fs.readFile(args[2], (error, buffer) => {
     }
   } else {
     console.log(
-      'Error: Wrong version number. Only works for patch 1.00 - 1.06.'
+      'Error: Wrong version number. Only works for patch 1.00 - 1.08.'
     );
   }
 });
