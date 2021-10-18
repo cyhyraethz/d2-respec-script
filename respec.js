@@ -7,7 +7,7 @@ const args = process.argv;
 
 const bufferSize = 2; // number of bytes to use for values, can handle numbers up to 65535
 
-const classOffset = 34; // 00 amazon, 01 sorceress, 02 necromancer, 03 paladin, 04 barbarian
+const classOffset = 34; // 00 amazon, 01 sorceress, 02 necromancer, 03 paladin, 04 barbarian, 05 druid, 06 assassin
 
 const levelOffset = 36; // character level
 
@@ -33,6 +33,8 @@ const startingAttributes = {
   necromancer: [15, 25, 15, 25],
   paladin: [25, 20, 25, 15],
   barbarian: [30, 20, 25, 10],
+  druid: [15, 20, 25, 20],
+  assassin: [20, 20, 20, 25],
 };
 
 const statsChanges = {
@@ -42,7 +44,19 @@ const statsChanges = {
   necromancer: [1, 2, 2],
   paladin: [1, 3, 1.5],
   barbarian: [1, 4, 1],
+  druid: [1, 2, 2],
+  assassin: [1.25, 3, 1.75],
 };
+
+const classNumber = [
+  'amazon',
+  'sorceress',
+  'necromancer',
+  'paladin',
+  'barbarian',
+  'druid',
+  'assassin',
+];
 
 const maxStats = [0, 0, 0];
 
@@ -110,23 +124,8 @@ const setStats = (unassigned, buffer) => {
 };
 
 const getClass = (buffer) => {
-  switch (buffer[classOffset]) {
-    case 0:
-      charClass = 'amazon';
-      break;
-    case 1:
-      charClass = 'sorceress';
-      break;
-    case 2:
-      charClass = 'necromancer';
-      break;
-    case 3:
-      charClass = 'paladin';
-      break;
-    case 4:
-      charClass = 'barbarian';
-      break;
-  }
+  charClass = classNumber[buffer[classOffset]];
+  // console.log(charClass);
   return buffer;
 };
 
