@@ -16,9 +16,6 @@ const unspentOffset = 562; // set to 255 to enable unspent skill points and attr
 const newStatsOffset = 581; // number of unspent attribute points
 const newSkillOffset = 585; // number of unspent skill points
 
-const firstSkillOffset = 619; // address of first class skill
-const lastSkillOffset = 648; // address of last class skill
-
 const maxStatsOffsets = [610, 594, 602]; // stamina, life, mana
 const currentStatsOffsets = [606, 590, 598]; // stamina, life, mana
 
@@ -60,10 +57,12 @@ const classNumber = [
 
 const maxStats = [0, 0, 0];
 
-let level;
-let charClass;
-let unspentSkills;
-let unspentAttributes;
+let level; // character level
+let charClass; // character class
+let unspentSkills; // unspent skills
+let unspentAttributes; // unspent attributes
+let firstSkillOffset; // address of first class skill
+let lastSkillOffset; // address of last class skill
 
 const getValue = (offset, size, buffer) => {
   let value = '';
@@ -123,6 +122,12 @@ const setStats = (unassigned, buffer) => {
   return buffer;
 };
 
+const getSkills = (buffer) => {
+  firstSkillOffset = buffer.indexOf('6966', 0, 'hex') + 2;
+  lastSkillOffset = buffer.indexOf('4A4D', 0, 'hex') - 1;
+  return buffer;
+};
+
 const getClass = (buffer) => {
   charClass = classNumber[buffer[classOffset]];
   // console.log(charClass);
@@ -164,11 +169,13 @@ const addToBuffer = (buffer) => {
 
 const resetSkills = (buffer) => {
   let unassigned = 0;
-  for (let i = firstSkillOffset; i <= lastSkillOffset; i++) {
-    unassigned += buffer[i];
-    buffer[i] = 0;
+  if (lastSkillOffset - firstSkillOffset === 29) {
+    for (let i = firstSkillOffset; i <= lastSkillOffset; i++) {
+      unassigned += buffer[i];
+      buffer[i] = 0;
+    }
+    buffer[newSkillOffset] = unspentSkills + unassigned;
   }
-  buffer[newSkillOffset] = unspentSkills + unassigned;
   return buffer;
 };
 
@@ -202,6 +209,7 @@ fs.readFile(args[2], (error, buffer) => {
       buffer = getUnspent(buffer);
       buffer = getClass(buffer);
       buffer = getStats(buffer);
+      buffer = getSkills(buffer);
       buffer = resetSkills(buffer);
       buffer = resetAttributes(buffer);
       fs.writeFile(args[2], buffer, (error) => {
