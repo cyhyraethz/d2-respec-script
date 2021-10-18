@@ -9,6 +9,8 @@ const bufferSize = 2; // number of bytes to use for values, can handle numbers u
 
 const classOffset = 34; // 00 amazon, 01 sorceress, 02 necromancer, 03 paladin, 04 barbarian
 
+const levelOffset = 36; // character level
+
 const unspentOffset = 562; // set to 255 to enable unspent skill points and attributes
 
 const newStatsOffset = 581; // number of unspent attribute points
@@ -35,15 +37,16 @@ const startingAttributes = {
 
 const statsChanges = {
   // stamina, life, mana
-  amazon: [1, 3, 1.5], // first point +1 mana, second point +2 mana, Math.floor()
+  amazon: [1, 3, 1.5],
   sorceress: [1, 2, 2],
   necromancer: [1, 2, 2],
-  paladin: [1, 3, 1.5], // first point +1 mana, second point +2 mana, Math.floor()
+  paladin: [1, 3, 1.5],
   barbarian: [1, 4, 1],
 };
 
 const maxStats = [0, 0, 0];
 
+let level;
 let charClass;
 let unspentSkills;
 let unspentAttributes;
@@ -77,6 +80,7 @@ const setValue = (value, offset, size, buffer) => {
 };
 
 const getStats = (buffer) => {
+  level = buffer[levelOffset];
   for (let i = 0; i < maxStats.length; i++) {
     maxStats[i] = getValue(maxStatsOffsets[i], bufferSize, buffer);
   }
@@ -84,17 +88,23 @@ const getStats = (buffer) => {
 };
 
 const setStats = (unassigned, buffer) => {
+  let halfPoint = 0;
   const stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
   const life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
-  const mana =
-    maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
+  let mana;
+  if ((charClass == 'amazon' || charClass == 'paladin') && level % 2 == 0) {
+    mana = maxStats[2] - Math.ceil(statsChanges[charClass][2] * unassigned[3]);
+    halfPoint = 128;
+  } else {
+    mana = maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
+  }
   const stats = [stamina, life, mana];
   for (let i = 0; i < stats.length; i++) {
     buffer = setValue(stats[i], maxStatsOffsets[i], bufferSize, buffer);
     buffer = setValue(stats[i], currentStatsOffsets[i], bufferSize, buffer);
   }
   for (let i = 0; i < halfPointOffsets.length; i++) {
-    buffer[halfPointOffsets[i]] = 0;
+    buffer[halfPointOffsets[i]] = halfPoint;
   }
   return buffer;
 };
