@@ -21,7 +21,9 @@ const currentStatsOffsets = [606, 590, 598]; // stamina, life, mana
 
 const attributeOffsets = [565, 573, 577, 569]; // strength, dexterity, vitality, energy
 
-const halfPointOffsets = [597, 601]; // used to calculate mana gain from next energy point
+const fractionalLifeOffsets = [589, 593]; // used to calculate life gain
+const fractionalManaOffsets = [597, 601]; // used to calculate mana gain
+const fractionalStaminaOffsets = [605, 609]; // used to calculate stamina gain
 
 const startingAttributes = {
   // strength, dexterity, vitality, energy
@@ -34,15 +36,24 @@ const startingAttributes = {
   assassin: [20, 20, 20, 25],
 };
 
-const statsChanges = {
-  // stamina, life, mana
-  amazon: [1, 3, 1.5],
-  sorceress: [1, 2, 2],
-  necromancer: [1, 2, 2],
-  paladin: [1, 3, 1.5],
-  barbarian: [1, 4, 1],
-  druid: [1, 2, 2],
-  assassin: [1.25, 3, 1.75],
+const startingStats = {
+  amazon: { stamina: 84, life: 50, mana: 15 },
+  sorceress: { stamina: 74, life: 40, mana: 35 },
+  necromancer: { stamina: 79, life: 45, mana: 25 },
+  paladin: { stamina: 89, life: 55, mana: 15 },
+  barbarian: { stamina: 91, life: 55, mana: 10 },
+  druid: { stamina: 84, life: 55, mana: 20 },
+  assassin: { stamina: 95, life: 50, mana: 25 },
+};
+
+const statsPerLevel = {
+  amazon: { stamina: 1, life: 2, mana: 1.5 },
+  sorceress: { stamina: 1, life: 1, mana: 2 },
+  necromancer: { stamina: 1, life: 1.5, mana: 2 },
+  paladin: { stamina: 1, life: 2, mana: 1.5 },
+  barbarian: { stamina: 1, life: 2, mana: 1 },
+  druid: { stamina: 1, life: 1.5, mana: 2 },
+  assassin: { stamina: 1.25, life: 2, mana: 1.5 },
 };
 
 const classNumber = [
@@ -88,7 +99,6 @@ const setValue = (value, offset, size, buffer) => {
   for (let i = 0; i < size; i++) {
     buffer[offset + i] = parseInt(hexCodes[i], 16);
   }
-  // console.log({ hexCodes });
   return buffer;
 };
 
@@ -100,24 +110,39 @@ const getStats = (buffer) => {
   return buffer;
 };
 
-const setStats = (unassigned, buffer) => {
-  let halfPoint = 0;
-  const stamina = maxStats[0] - statsChanges[charClass][0] * unassigned[2];
-  const life = maxStats[1] - statsChanges[charClass][1] * unassigned[2];
-  let mana;
-  if ((charClass == 'amazon' || charClass == 'paladin') && level % 2 == 0) {
-    mana = maxStats[2] - Math.ceil(statsChanges[charClass][2] * unassigned[3]);
-    halfPoint = 128;
-  } else {
-    mana = maxStats[2] - Math.floor(statsChanges[charClass][2] * unassigned[3]);
-  }
+const setStats = (buffer) => {
+  let fractionalLife = 0;
+  let fractionalMana = 0;
+  let fractionalStamina = 0;
+  let stamina =
+    startingStats[charClass]['stamina'] +
+    statsPerLevel[charClass]['stamina'] * (level - 1);
+  let life =
+    startingStats[charClass]['life'] +
+    statsPerLevel[charClass]['life'] * (level - 1);
+  let mana =
+    startingStats[charClass]['mana'] +
+    statsPerLevel[charClass]['mana'] * (level - 1);
+  for (let i of [181, 277, 373]) if (buffer[i] === 16) life += 20;
+  fractionalLife = (life % 1) * 256;
+  fractionalMana = (mana % 1) * 256;
+  fractionalStamina = (stamina % 1) * 256;
+  stamina = Math.floor(stamina);
+  life = Math.floor(life);
+  mana = Math.floor(mana);
   const stats = [stamina, life, mana];
   for (let i = 0; i < stats.length; i++) {
     buffer = setValue(stats[i], maxStatsOffsets[i], bufferSize, buffer);
     buffer = setValue(stats[i], currentStatsOffsets[i], bufferSize, buffer);
   }
-  for (let i = 0; i < halfPointOffsets.length; i++) {
-    buffer[halfPointOffsets[i]] = halfPoint;
+  for (let i = 0; i < fractionalLifeOffsets.length; i++) {
+    buffer[fractionalLifeOffsets[i]] = fractionalLife;
+  }
+  for (let i = 0; i < fractionalManaOffsets.length; i++) {
+    buffer[fractionalManaOffsets[i]] = fractionalMana;
+  }
+  for (let i = 0; i < fractionalStaminaOffsets.length; i++) {
+    buffer[fractionalStaminaOffsets[i]] = fractionalStamina;
   }
   return buffer;
 };
@@ -130,7 +155,6 @@ const getSkills = (buffer) => {
 
 const getClass = (buffer) => {
   charClass = classNumber[buffer[classOffset]];
-  // console.log(charClass);
   return buffer;
 };
 
@@ -151,7 +175,6 @@ const getUnspent = (buffer) => {
 };
 
 const addToBuffer = (buffer) => {
-  // console.log(buffer.length);
   if (buffer[unspentOffset] !== 223 && buffer[unspentOffset] !== 255) {
     const startBuffer = buffer.slice(0, newStatsOffset);
     const endBuffer = buffer.slice(newStatsOffset);
@@ -163,7 +186,6 @@ const addToBuffer = (buffer) => {
     buffer = Buffer.concat([startBuffer, Buffer.alloc(4), endBuffer]);
   }
   buffer[unspentOffset] = 255;
-  // console.log(buffer.length);
   return buffer;
 };
 
@@ -194,9 +216,7 @@ const resetAttributes = (buffer) => {
   const totalUnassigned =
     (unspentAttributes || 0) + unassigned.reduce((a, b) => a + b);
   buffer = setValue(totalUnassigned, newStatsOffset, bufferSize, buffer);
-  buffer = setStats(unassigned, buffer);
-  // console.log({ unassigned });
-  // console.log({ attributes });
+  buffer = setStats(buffer);
   return buffer;
 };
 
@@ -216,7 +236,6 @@ fs.readFile(args[2], (error, buffer) => {
         if (error) {
           console.log(error);
         } else {
-          // console.log({ maxStats });
           console.log('Skill points and attributes have been unassigned.');
         }
       });
