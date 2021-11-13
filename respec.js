@@ -25,6 +25,12 @@ const fractionalOffsets = { stamina: [605, 609], life: [589, 593], mana: [597, 6
 
 const questOffsets = { goldenBird: [181, 277, 373], lamEsenTome: [175, 271, 367] };
 
+const skillQuests = {
+  denOfEvil: { offsets: [143, 239, 335], skills: 1 },
+  radamentLair: { offsets: [159, 255, 351], skills: 1 },
+  fallenAngel: { offsets: [191, 287, 383], skills: 2 },
+};
+
 const startingAttributes = {
   amazon: { strength: 20, dexterity: 25, vitality: 20, energy: 15 },
   sorceress: { strength: 10, dexterity: 25, vitality: 10, energy: 35 },
@@ -59,16 +65,14 @@ const classNumber = ['amazon', 'sorceress', 'necromancer', 'paladin', 'barbarian
 
 let level; // character level
 let charClass; // character class
-let unspentSkills; // unspent skills
 let lastSkillOffset; // address of last class skill
 let firstSkillOffset; // address of first class skill
 
-const getValue = (offset, size, buffer) => {
-  let value = '';
-  for (let i = offset + size - 1; i >= offset; i--) {
-    value += buffer[i].toString(16).toUpperCase();
-  }
-  return parseInt(value, 16);
+const setVariables = (buffer) => {
+  level = buffer[levelOffset];
+  charClass = classNumber[buffer[classOffset]];
+  lastSkillOffset = buffer.indexOf('4A4D', 0, 'hex') - 1;
+  firstSkillOffset = buffer.indexOf('6966', 0, 'hex') + 2;
 };
 
 const setValue = (value, offset, size, buffer) => {
@@ -88,14 +92,6 @@ const setValue = (value, offset, size, buffer) => {
     buffer[offset + i] = parseInt(hexCodes[i], 16);
   }
   return buffer;
-};
-
-const setGlobals = (buffer) => {
-  level = buffer[levelOffset];
-  charClass = classNumber[buffer[classOffset]];
-  lastSkillOffset = buffer.indexOf('4A4D', 0, 'hex') - 1;
-  firstSkillOffset = buffer.indexOf('6966', 0, 'hex') + 2;
-  if (buffer[unspentOffset] > 238) unspentSkills = getValue(newSkillOffset, bufferSize, buffer);
 };
 
 const setStats = (buffer) => {
@@ -125,17 +121,22 @@ const addToBuffer = (buffer) => {
     buffer = Buffer.concat([startBuffer, Buffer.alloc(4), endBuffer]);
   }
   buffer[unspentOffset] = 255;
+  setVariables(buffer);
   return buffer;
 };
 
 const resetSkills = (buffer) => {
-  let unassigned = 0;
   if (lastSkillOffset - firstSkillOffset === 29) {
-    for (let i = firstSkillOffset; i <= lastSkillOffset; i++) {
-      unassigned += buffer[i];
-      buffer[i] = 0;
+    let unspentSkills = level - 1;
+    for (let quest in skillQuests) {
+      for (let offset of skillQuests[quest]['offsets']) {
+        if (buffer[offset] === 16) {
+          unspentSkills += skillQuests[quest]['skills'];
+        }
+      }
     }
-    buffer[newSkillOffset] = unspentSkills + unassigned;
+    buffer.fill(0, firstSkillOffset, lastSkillOffset + 1);
+    buffer[newSkillOffset] = unspentSkills;
   }
   return buffer;
 };
@@ -157,7 +158,6 @@ fs.readFile(args[2], (error, buffer) => {
     if (error) {
       return console.log(error);
     } else {
-      setGlobals(buffer);
       buffer = addToBuffer(buffer);
       buffer = resetSkills(buffer);
       buffer = resetAttributes(buffer);
