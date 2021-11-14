@@ -65,14 +65,10 @@ const classNumber = ['amazon', 'sorceress', 'necromancer', 'paladin', 'barbarian
 
 let level; // character level
 let charClass; // character class
-let lastSkillOffset; // address of last class skill
-let firstSkillOffset; // address of first class skill
 
 const setVariables = (buffer) => {
   level = buffer[levelOffset];
   charClass = classNumber[buffer[classOffset]];
-  lastSkillOffset = buffer.indexOf('4A4D', 0, 'hex') - 1;
-  firstSkillOffset = buffer.indexOf('6966', 0, 'hex') + 2;
 };
 
 const setValue = (value, offset, size, buffer) => {
@@ -126,6 +122,8 @@ const addToBuffer = (buffer) => {
 };
 
 const resetSkills = (buffer) => {
+  const firstSkillOffset = buffer.indexOf('6966', 0, 'hex') + 2;
+  const lastSkillOffset = buffer.indexOf('4A4D', 0, 'hex') - 1;
   if (lastSkillOffset - firstSkillOffset === 29) {
     let unspentSkills = level - 1;
     for (let quest in skillQuests) {
